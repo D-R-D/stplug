@@ -1,0 +1,11 @@
+name: Stplug
+version: ${project.version}
+main: stplug.stplug.Stplug
+api-version: 1.16
+load: STARTUP
+authors: [ kanahebi ]
+default-permission: NOT_OP
+
+commands:
+  container:
+    description: start container!!
