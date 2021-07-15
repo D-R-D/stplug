@@ -40,8 +40,6 @@ public final class Stplug extends JavaPlugin implements Listener
         // Plugin shutdown logic
     }
 
-
-
     @EventHandler
     public void PlayerJoinEvent(PlayerJoinEvent e)
     {
