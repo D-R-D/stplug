@@ -9,15 +9,7 @@ Bungeecordを子プロセスとして起動して遊ぶプログラムsins("http
 
 コマンド
 
-conteiner
-
-+(半角スペース)
-
-start or stop
-
-+(半角スペース)
-
-コンテナ名
+conteiner + (半角スペース) + (start or stop) + (半角スペース) + コンテナ名
 
 導入はプラグインフォルダに入れるだけ！！
 minecraftハブサーバー用にどうぞ
