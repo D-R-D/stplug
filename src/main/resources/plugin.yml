@@ -1,7 +1,7 @@
 name: Stplug
 version: ${project.version}
 main: stplug.stplug.Stplug
-api-version: 1.16
+api-version: 1.18.1
 load: STARTUP
 authors: [ kanahebi ]
 default-permission: NOT_OP

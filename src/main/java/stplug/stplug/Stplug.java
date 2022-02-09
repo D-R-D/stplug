@@ -1,20 +1,18 @@
 package stplug.stplug;
 
 import org.bukkit.ChatColor;
+import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.command.Command;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetSocketAddress;
-import java.net.SocketException;
+import java.net.*;
+import java.nio.channels.ServerSocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
@@ -28,11 +26,24 @@ public final class Stplug extends JavaPlugin implements Listener
         Thread r_thread = new Thread(new Runnable() {
             @Override
             public void run() {
-                sinsreceiver();
+                try
+                {
+                    sinsreceiver();
+                } catch (IOException e)
+                {
+                    e.printStackTrace();
+                }
             }
         });
         r_thread.start();
-        eventsender("mcp_h:started");
+
+        try
+        {
+            eventsender("mcp_h:started");
+        } catch (IOException e)
+        {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -45,7 +56,7 @@ public final class Stplug extends JavaPlugin implements Listener
     {
         if(bool) {
             Player p = e.getPlayer();
-            p.sendMessage(ChatColor.RED + "sys_Message : サーバーはアップデート中です。5分後に再度ログインして下さい。");
+            p.sendMessage(ChatColor.RED + "sys_Message : サーバーはアップデート中です。10分後に再度ログインして下さい。");
         }
     }
 
@@ -53,18 +64,36 @@ public final class Stplug extends JavaPlugin implements Listener
     public boolean onCommand(CommandSender sender, Command command,String label, String[] args) {
 
         if (command.getName().equalsIgnoreCase("container") && !bool) {
-            if (args.length == 0) {
+            if (args.length == 0)
+            {
                 sender.sendMessage("サブコマンドを入力してください。");
                 return false;
             } else {
-                if (args[0].equalsIgnoreCase("start")) {
-                    if (args[1] == null) {
+                if (args[0].equalsIgnoreCase("start"))
+                {
+                    if (args[1] == null)
+                    {
                         sender.sendMessage("コンテナが指定されていません。");
                         return false;
-                    } else {
+                    } else
+                    {
                         String cmd = "container:start:" + args[1];
-                        sinssender(cmd);
-                        eventsender(args[1] +":starting");
+
+                        Thread r_thread = new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                try
+                                {
+                                    sinssender(cmd,args[1],"starting");
+                                } catch (IOException e)
+                                {
+                                    e.printStackTrace();
+                                }
+                            }
+                        });
+                        r_thread.start();
+
+
                     }
                 } else if (args[0].equalsIgnoreCase("stop")) {
                     if (args[1] == null) {
@@ -72,8 +101,23 @@ public final class Stplug extends JavaPlugin implements Listener
                         return false;
                     } else {
                         String cmd = "container:stop:" + args[1];
-                        sinssender(cmd);
-                        eventsender(args[1] +":stopping");
+
+
+                        Thread r_thread = new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                try
+                                {
+                                    sinssender(cmd,args[1],"stopping");
+                                } catch (IOException e)
+                                {
+                                    e.printStackTrace();
+                                }
+                            }
+                        });
+                        r_thread.start();
+
+
                     }
                 } else {
                     sender.sendMessage("サブコマンドが違います。");
@@ -84,69 +128,51 @@ public final class Stplug extends JavaPlugin implements Listener
         return true;
     }
 
-    public void sinssender(String str)
-    {
+    public void sinssender(String str,String sss ,String ssss) throws IOException {
         //strをbyte配列に変換
         byte[] data;
         data = str.getBytes(StandardCharsets.UTF_8);
         //接続用のソケットを作成
         DatagramSocket sock = null;
-        try { sock = new DatagramSocket(); }
-        catch (SocketException e) { e.printStackTrace();}
+        sock = new DatagramSocket();
         //パケットを作成し、udpで送信する。
         DatagramPacket packet = new DatagramPacket(data,data.length,new InetSocketAddress("127.0.0.1",6011));
-        try { sock.send(packet); }
-        catch (IOException e) { e.printStackTrace(); }
+        sock.send(packet);
         //最後にお片付けして終了
         sock.close();
 
-        getLogger().info("udp sended");
+        getLogger().info("udp sent");
+
+        eventsender( sss + ":" + ssss);
     }
 
-    public void eventsender(String str)
-    {
+    public void eventsender(String str) throws IOException {
         //strをbyte配列に変換
         byte[] data;
         data = str.getBytes(StandardCharsets.UTF_8);
         //接続用のソケットを作成
         DatagramSocket sock = null;
-        try { sock = new DatagramSocket(); }
-        catch (SocketException e) { e.printStackTrace();}
+        sock = new DatagramSocket();
         //パケットを作成し、udpで送信する。
         DatagramPacket packet = new DatagramPacket(data,data.length,new InetSocketAddress("127.0.0.1",7011));
-        try { sock.send(packet); }
-        catch (IOException e) { e.printStackTrace(); }
+        sock.send(packet);
         //最後にお片付けして終了
         sock.close();
 
-        getLogger().info("event sended");
+        getLogger().info("event sent");
     }
 
-    public  void sinsreceiver()
-    {
+    public  void sinsreceiver() throws IOException {
         //データ受信
         byte[] data = new byte[1024];
-        DatagramSocket sock = null;
-        try {
-            sock = new DatagramSocket(7001);
-        } catch (SocketException e) {
-            e.printStackTrace();
-        }
+        DatagramSocket sock = new DatagramSocket(7001);
         DatagramPacket packet = new DatagramPacket(data, data.length);
 
         while (true) {
-            try {
-                sock.receive(packet);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            String str = null;
-            try {
-                str = new String(Arrays.copyOf(packet.getData(), packet.getLength()), "UTF-8");
-            } catch (UnsupportedEncodingException e) {
-                e.printStackTrace();
-            }
 
+            sock.receive(packet);
+
+            String str = new String(Arrays.copyOf(packet.getData(), packet.getLength()), "UTF-8");
             getLogger().info(str);
 
             //データごとに処理
@@ -154,6 +180,16 @@ public final class Stplug extends JavaPlugin implements Listener
             {
                 bool = true;
             }
+            else
+            {
+                //saboru
+            }
         }
+    }
+
+    public void Udssender(String str) throws IOException {
+        UnixDomainSocketAddress socketAddress = UnixDomainSocketAddress.of("/uds/mcp_h/plg_mng");
+        ServerSocketChannel uds = ServerSocketChannel.open(StandardProtocolFamily.UNIX);
+        uds.bind(socketAddress);
     }
 }
